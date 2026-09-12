@@ -1,0 +1,366 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Footer from '../../components/Footer.astro';
+import Header from '../../components/Header.astro';
+import { SITE_TITLE } from '../../consts';
+---
+
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<BaseHead
+			title={`时间戳转换 | ${SITE_TITLE}`}
+			description="Unix 时间戳与日期时间在线互转，支持秒/毫秒、本地时间、UTC、ISO 8601 与相对时间"
+		/>
+		<style>
+			main {
+				width: 960px;
+			}
+			h1 {
+				margin: 1.5em 0 0.5em;
+			}
+			.hint {
+				color: rgb(var(--gray));
+				margin-bottom: 1.5em;
+			}
+			.card {
+				border: 1px solid rgb(var(--gray-light));
+				border-radius: 12px;
+				padding: 1.5em;
+				margin-bottom: 1.5em;
+			}
+			.card h2 {
+				font-size: 1.1em;
+				margin-bottom: 1em;
+			}
+			.now-row {
+				display: flex;
+				flex-wrap: wrap;
+				align-items: baseline;
+				gap: 0.4em 1.5em;
+			}
+			.now-value {
+				font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace;
+				font-size: 20px;
+				font-weight: 700;
+				cursor: pointer;
+			}
+			.now-value:hover {
+				color: var(--accent);
+			}
+			.now-label {
+				color: rgb(var(--gray));
+				font-size: 0.9em;
+			}
+			input[type='text'],
+			input[type='datetime-local'] {
+				padding: 0.6em 0.8em;
+				border: 1px solid rgb(var(--gray-light));
+				border-radius: 8px;
+				font-size: 15px;
+				box-sizing: border-box;
+				background: rgb(var(--gray-light) / 30%);
+			}
+			input:focus {
+				outline: 2px solid var(--accent);
+			}
+			input[type='text'] {
+				width: 100%;
+				font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace;
+			}
+			.row {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.75em;
+				align-items: center;
+			}
+			.row + .row {
+				margin-top: 0.75em;
+			}
+			button {
+				padding: 0.5em 1.2em;
+				border: 1px solid var(--accent);
+				border-radius: 6px;
+				background: white;
+				color: var(--accent);
+				font-size: 0.95em;
+				cursor: pointer;
+				transition: 0.15s ease;
+			}
+			button:hover {
+				background: var(--accent);
+				color: white;
+			}
+			button.primary {
+				background: var(--accent);
+				color: white;
+			}
+			button.primary:hover {
+				background: var(--accent-dark);
+			}
+			.result {
+				margin-top: 1em;
+				display: grid;
+				gap: 0.5em;
+			}
+			.result-row {
+				display: flex;
+				justify-content: space-between;
+				align-items: baseline;
+				gap: 1em;
+				padding: 0.5em 0.75em;
+				border-radius: 6px;
+				background: rgb(var(--gray-light) / 30%);
+				cursor: pointer;
+			}
+			.result-row:hover {
+				background: rgb(var(--gray-light) / 60%);
+			}
+			.result-label {
+				color: rgb(var(--gray));
+				font-size: 0.85em;
+				white-space: nowrap;
+			}
+			.result-value {
+				font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace;
+				word-break: break-all;
+				text-align: right;
+			}
+			.error {
+				color: #dc2626;
+				font-size: 0.9em;
+				margin-top: 0.75em;
+				min-height: 1.3em;
+			}
+			@media (max-width: 720px) {
+				main {
+					width: 100%;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<h1>🕒 时间戳转换</h1>
+			<p class="hint">Unix 时间戳与日期时间互转，所有计算都在浏览器本地完成。</p>
+
+			<div class="card">
+				<h2>当前时间戳（点击可复制）</h2>
+				<div class="now-row">
+					<span class="now-value" id="now-sec" title="点击复制秒级时间戳"></span>
+					<span class="now-label">秒</span>
+					<span class="now-value" id="now-ms" title="点击复制毫秒级时间戳"></span>
+					<span class="now-label">毫秒</span>
+					<span class="now-label" id="now-local"></span>
+				</div>
+			</div>
+
+			<div class="card">
+				<h2>时间戳 → 日期时间</h2>
+				<div class="row">
+					<input
+						type="text"
+						id="ts-input"
+						placeholder="输入秒或毫秒时间戳，如 1768100000（自动识别精度）"
+						spellcheck="false"
+						style="flex: 1; min-width: 240px"
+					/>
+					<button id="ts-now">填入当前</button>
+					<button id="ts-clear">清空</button>
+				</div>
+				<div class="result" id="ts-result"></div>
+				<div class="error" id="ts-error" aria-live="polite"></div>
+			</div>
+
+			<div class="card">
+				<h2>日期时间 → 时间戳</h2>
+				<div class="row">
+					<input type="datetime-local" id="dt-input" step="1" style="flex: 1; min-width: 240px" />
+					<button id="dt-now" class="primary">此刻</button>
+					<button id="dt-clear">清空</button>
+				</div>
+				<div class="result" id="dt-result"></div>
+			</div>
+		</main>
+		<Footer />
+
+		<script>
+			function pad(n: number): string {
+				return String(n).padStart(2, '0');
+			}
+
+			// 相对时间描述：xxx 前 / xxx 后
+			function relative(date: Date, now: Date): string {
+				const diff = (date.getTime() - now.getTime()) / 1000;
+				const abs = Math.abs(diff);
+				const suffix = diff >= 0 ? '后' : '前';
+				const units: Array<[number, string]> = [
+					[60, '秒'],
+					[3600, '分钟'],
+					[86400, '小时'],
+					[86400 * 30, '天'],
+					[86400 * 365, '个月'],
+					[Infinity, '年'],
+				];
+				if (abs < 5) return '刚刚';
+				let prev = 1;
+				for (const [limit, name] of units) {
+					if (abs < limit) {
+						const value = Math.floor(abs / prev);
+						return `${value} ${name}${suffix}`;
+					}
+					prev = limit;
+				}
+				return '';
+			}
+
+			async function copyText(text: string) {
+				try {
+					await navigator.clipboard.writeText(text);
+				} catch {
+					// 剪贴板不可用时静默失败，不影响主流程
+				}
+			}
+
+			function resultRow(label: string, value: string): HTMLElement {
+				const row = document.createElement('div');
+				row.className = 'result-row';
+				row.title = '点击复制';
+				const labelEl = document.createElement('span');
+				labelEl.className = 'result-label';
+				labelEl.textContent = label;
+				const valueEl = document.createElement('span');
+				valueEl.className = 'result-value';
+				valueEl.textContent = value;
+				row.append(labelEl, valueEl);
+				row.addEventListener('click', () => copyText(value));
+				return row;
+			}
+
+			// ── 当前时间戳：每秒刷新 ──────────────────────────────
+			const nowSec = document.getElementById('now-sec')!;
+			const nowMs = document.getElementById('now-ms')!;
+			const nowLocal = document.getElementById('now-local')!;
+			function tick() {
+				const now = new Date();
+				const sec = Math.floor(now.getTime() / 1000);
+				nowSec.textContent = String(sec);
+				nowMs.textContent = String(now.getTime());
+				nowLocal.textContent = now.toLocaleString('zh-CN', { hour12: false });
+			}
+			tick();
+			setInterval(tick, 1000);
+			nowSec.addEventListener('click', () => copyText(nowSec.textContent ?? ''));
+			nowMs.addEventListener('click', () => copyText(nowMs.textContent ?? ''));
+
+			// ── 时间戳 → 日期 ────────────────────────────────────
+			const tsInput = document.getElementById('ts-input') as HTMLInputElement;
+			const tsResult = document.getElementById('ts-result')!;
+			const tsError = document.getElementById('ts-error')!;
+
+			function renderTs() {
+				tsResult.replaceChildren();
+				const raw = tsInput.value.trim();
+				if (!raw) {
+					tsError.textContent = '';
+					return;
+				}
+				if (!/^-?\d{1,16}$/.test(raw)) {
+					tsError.textContent = '⚠️ 请输入纯数字时间戳（秒或毫秒），不需要小数点';
+					return;
+				}
+				const num = Number(raw);
+				// 自动识别精度：绝对值 >= 1e12 视为毫秒（1e12ms ≈ 2001-09-09）
+				const ms = Math.abs(num) >= 1e12 ? num : num * 1000;
+				const date = new Date(ms);
+				if (Number.isNaN(date.getTime())) {
+					tsError.textContent = '⚠️ 时间戳超出可表示范围';
+					return;
+				}
+				tsError.textContent = '';
+
+				const local = date.toLocaleString('zh-CN', {
+					year: 'numeric',
+					month: '2-digit',
+					day: '2-digit',
+					hour: '2-digit',
+					minute: '2-digit',
+					second: '2-digit',
+					hour12: false,
+				});
+				const utc =
+					`${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())} ` +
+					`${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())} UTC`;
+
+				tsResult.append(
+					resultRow('本地时间（含时区）', `${local} GMT${formatOffset(date)}`),
+					resultRow('UTC 时间', utc),
+					resultRow('ISO 8601', date.toISOString()),
+					resultRow('秒级时间戳', String(Math.floor(date.getTime() / 1000))),
+					resultRow('毫秒时间戳', String(date.getTime())),
+					resultRow('相对现在', relative(date, new Date())),
+				);
+			}
+
+			function formatOffset(date: Date): string {
+				const offset = -date.getTimezoneOffset();
+				const sign = offset >= 0 ? '+' : '-';
+				const abs = Math.abs(offset);
+				return `${sign}${pad(Math.floor(abs / 60))}:${pad(abs % 60)}`;
+			}
+
+			tsInput.addEventListener('input', renderTs);
+			document.getElementById('ts-now')!.addEventListener('click', () => {
+				tsInput.value = String(Math.floor(Date.now() / 1000));
+				renderTs();
+			});
+			document.getElementById('ts-clear')!.addEventListener('click', () => {
+				tsInput.value = '';
+				renderTs();
+				tsInput.focus();
+			});
+
+			// ── 日期 → 时间戳 ────────────────────────────────────
+			const dtInput = document.getElementById('dt-input') as HTMLInputElement;
+			const dtResult = document.getElementById('dt-result')!;
+
+			function fillNow() {
+				const now = new Date();
+				now.setMilliseconds(0);
+				// datetime-local 需要 yyyy-MM-ddTHH:mm:ss 格式（本地时间）
+				dtInput.value =
+					`${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}` +
+					`T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+			}
+			fillNow();
+
+			function renderDt() {
+				dtResult.replaceChildren();
+				if (!dtInput.value) return;
+				const date = new Date(dtInput.value);
+				if (Number.isNaN(date.getTime())) {
+					dtResult.append(resultRow('错误', '⚠️ 无法识别的日期时间'));
+					return;
+				}
+				dtResult.append(
+					resultRow('秒级时间戳', String(Math.floor(date.getTime() / 1000))),
+					resultRow('毫秒时间戳', String(date.getTime())),
+					resultRow('ISO 8601', date.toISOString()),
+					resultRow('相对现在', relative(date, new Date())),
+				);
+			}
+			renderDt();
+
+			dtInput.addEventListener('input', renderDt);
+			document.getElementById('dt-now')!.addEventListener('click', () => {
+				fillNow();
+				renderDt();
+			});
+			document.getElementById('dt-clear')!.addEventListener('click', () => {
+				dtInput.value = '';
+				dtResult.replaceChildren();
+			});
+		</script>
+	</body>
+</html>
