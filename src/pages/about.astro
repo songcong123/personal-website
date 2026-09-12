@@ -1,0 +1,21 @@
+---
+import AboutHeroImage from '../assets/blog-placeholder-about.jpg';
+import Layout from '../layouts/BlogPost.astro';
+---
+
+<Layout
+	title="关于我"
+	description="关于站长和这个网站"
+	pubDate={new Date('2026-09-12')}
+	heroImage={AboutHeroImage}
+>
+	<p>
+		你好，欢迎来到我的小站！这里是我的个人博客和在线工具箱：我会在这里记录技术笔记、学习心得和生活随笔，
+		也会放一些自己写的实用小工具，希望能帮到你。
+	</p>
+
+	<p>
+		如果你对网站内容有任何建议，或者想和我交流，欢迎通过 GitHub 联系我。
+		<!-- TODO: 在这里补充你的个人介绍：职业、兴趣、擅长的技术方向等 -->
+	</p>
+</Layout>

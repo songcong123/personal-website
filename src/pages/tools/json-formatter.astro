@@ -1,0 +1,194 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Footer from '../../components/Footer.astro';
+import Header from '../../components/Header.astro';
+import { SITE_TITLE } from '../../consts';
+---
+
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<BaseHead title={`JSON 格式化 | ${SITE_TITLE}`} description="在线格式化、压缩、校验 JSON 数据，纯浏览器本地运行" />
+		<style>
+			main {
+				width: 960px;
+			}
+			h1 {
+				margin: 1.5em 0 0.5em;
+			}
+			.hint {
+				color: rgb(var(--gray));
+				margin-bottom: 1.5em;
+			}
+			textarea {
+				width: 100%;
+				height: 320px;
+				padding: 1em;
+				font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace;
+				font-size: 14px;
+				line-height: 1.6;
+				border: 1px solid rgb(var(--gray-light));
+				border-radius: 8px;
+				resize: vertical;
+				box-sizing: border-box;
+				background: rgb(var(--gray-light) / 30%);
+			}
+			textarea:focus {
+				outline: 2px solid var(--accent);
+			}
+			.actions {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.75em;
+				margin: 1em 0;
+			}
+			button {
+				padding: 0.5em 1.2em;
+				border: 1px solid var(--accent);
+				border-radius: 6px;
+				background: white;
+				color: var(--accent);
+				font-size: 0.95em;
+				cursor: pointer;
+				transition: 0.15s ease;
+			}
+			button:hover {
+				background: var(--accent);
+				color: white;
+			}
+			button.primary {
+				background: var(--accent);
+				color: white;
+			}
+			button.primary:hover {
+				background: var(--accent-dark);
+			}
+			.status {
+				min-height: 1.6em;
+				margin-bottom: 1em;
+				font-size: 0.9em;
+			}
+			.status.ok {
+				color: #16a34a;
+			}
+			.status.error {
+				color: #dc2626;
+				white-space: pre-wrap;
+			}
+			@media (max-width: 720px) {
+				main {
+					width: 100%;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<h1>🧾 JSON 格式化</h1>
+			<p class="hint">粘贴 JSON 后点击按钮，所有处理都在浏览器本地完成。</p>
+
+			<textarea
+				id="input"
+				placeholder='在此粘贴 JSON，例如：{"name": "Astro", "version": 7}'
+				spellcheck="false"></textarea>
+
+			<div class="actions">
+				<button id="format" class="primary">格式化</button>
+				<button id="minify">压缩</button>
+				<button id="sort">排序并格式化</button>
+				<button id="copy">复制结果</button>
+				<button id="clear">清空</button>
+			</div>
+
+			<div id="status" class="status" aria-live="polite"></div>
+		</main>
+		<Footer />
+
+		<script>
+			const input = document.getElementById('input') as HTMLTextAreaElement;
+			const status = document.getElementById('status')!;
+
+			function setStatus(text: string, cls: 'ok' | 'error' | '') {
+				status.textContent = text;
+				status.className = 'status' + (cls ? ' ' + cls : '');
+			}
+
+			// 解析失败时把 "position N" 转成 行:列，方便定位
+			function locate(text: string, message: string): string {
+				const match = message.match(/position (\d+)/i);
+				if (!match) return message;
+				const pos = Number(match[1]);
+				const before = text.slice(0, pos);
+				const line = before.split('\n').length;
+				const col = pos - before.lastIndexOf('\n');
+				return `${message}（约在第 ${line} 行第 ${col} 列）`;
+			}
+
+			function parse(): unknown | undefined {
+				const text = input.value.trim();
+				if (!text) {
+					setStatus('请先输入 JSON 内容', 'error');
+					return undefined;
+				}
+				try {
+					setStatus('', '');
+					return JSON.parse(text);
+				} catch (e) {
+					setStatus(locate(text, (e as Error).message), 'error');
+					return undefined;
+				}
+			}
+
+			function sortValue(value: unknown): unknown {
+				if (Array.isArray(value)) return value.map(sortValue);
+				if (value && typeof value === 'object') {
+					return Object.fromEntries(
+						Object.entries(value as Record<string, unknown>)
+							.sort(([a], [b]) => a.localeCompare(b))
+							.map(([k, v]) => [k, sortValue(v)]),
+					);
+				}
+				return value;
+			}
+
+			function output(obj: unknown) {
+				input.value = JSON.stringify(obj, null, 2);
+				setStatus('✓ 已格式化', 'ok');
+			}
+
+			document.getElementById('format')!.addEventListener('click', () => {
+				const obj = parse();
+				if (obj !== undefined) output(obj);
+			});
+
+			document.getElementById('minify')!.addEventListener('click', () => {
+				const obj = parse();
+				if (obj !== undefined) {
+					input.value = JSON.stringify(obj);
+					setStatus('✓ 已压缩', 'ok');
+				}
+			});
+
+			document.getElementById('sort')!.addEventListener('click', () => {
+				const obj = parse();
+				if (obj !== undefined) output(sortValue(obj));
+			});
+
+			document.getElementById('copy')!.addEventListener('click', async () => {
+				try {
+					await navigator.clipboard.writeText(input.value);
+					setStatus('✓ 已复制到剪贴板', 'ok');
+				} catch {
+					setStatus('复制失败，请手动选择复制', 'error');
+				}
+			});
+
+			document.getElementById('clear')!.addEventListener('click', () => {
+				input.value = '';
+				setStatus('', '');
+				input.focus();
+			});
+		</script>
+	</body>
+</html>

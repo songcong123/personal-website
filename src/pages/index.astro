@@ -1,0 +1,167 @@
+---
+import { getCollection } from 'astro:content';
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import FormattedDate from '../components/FormattedDate.astro';
+import Header from '../components/Header.astro';
+import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+
+const posts = (await getCollection('blog'))
+	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+	.slice(0, 5);
+
+const tools = [
+	{
+		href: '/tools/json-formatter/',
+		title: 'JSON 格式化',
+		description: '格式化、压缩、校验 JSON 数据，支持错误定位。',
+	},
+	{
+		href: '/tools/password-generator/',
+		title: '密码生成器',
+		description: '自定义长度和字符集，在浏览器本地生成强随机密码。',
+	},
+];
+---
+
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+		<style>
+			main {
+				width: 960px;
+			}
+			.hero {
+				text-align: center;
+				padding: 2em 0;
+			}
+			.hero h1 {
+				margin-bottom: 0.5em;
+			}
+			.hero p {
+				color: rgb(var(--gray-dark));
+			}
+			section {
+				margin: 2em 0;
+			}
+			section h2 {
+				border-bottom: 1px solid rgb(var(--gray-light, 220 220 220));
+				padding-bottom: 0.4em;
+			}
+			section h2 a {
+				font-size: 0.6em;
+				float: right;
+				color: rgb(var(--gray));
+				text-decoration: none;
+			}
+			section h2 a:hover {
+				color: var(--accent);
+			}
+			.post-list {
+				list-style: none;
+				margin: 0;
+				padding: 0;
+			}
+			.post-list li {
+				padding: 0.75em 0;
+				border-bottom: 1px dashed rgb(var(--gray-light, 220 220 220));
+			}
+			.post-list a {
+				display: flex;
+				justify-content: space-between;
+				align-items: baseline;
+				gap: 1em;
+				text-decoration: none;
+				color: rgb(var(--black));
+			}
+			.post-list a:hover .post-title {
+				color: var(--accent);
+			}
+			.post-title {
+				font-weight: 600;
+			}
+			.post-date {
+				color: rgb(var(--gray));
+				white-space: nowrap;
+				font-size: 0.9em;
+			}
+			.tool-grid {
+				display: grid;
+				grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+				gap: 1.5em;
+				list-style: none;
+				margin: 0;
+				padding: 0;
+			}
+			.tool-grid a {
+				display: block;
+				padding: 1.25em;
+				border: 1px solid rgb(var(--gray-light, 220 220 220));
+				border-radius: 12px;
+				text-decoration: none;
+				color: rgb(var(--black));
+				transition: 0.2s ease;
+			}
+			.tool-grid a:hover {
+				border-color: var(--accent);
+				box-shadow: var(--box-shadow);
+			}
+			.tool-grid .tool-title {
+				font-weight: 700;
+				margin-bottom: 0.5em;
+			}
+			.tool-grid .tool-desc {
+				color: rgb(var(--gray));
+				font-size: 0.9em;
+			}
+			@media (max-width: 720px) {
+				main {
+					width: 100%;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<div class="hero">
+				<h1>👋 欢迎来到{SITE_TITLE}</h1>
+				<p>{SITE_DESCRIPTION}——记录想法，分享工具。</p>
+			</div>
+
+			<section>
+				<h2>最新文章 <a href="/blog/">全部文章 &rarr;</a></h2>
+				<ul class="post-list">
+					{
+						posts.map((post) => (
+							<li>
+								<a href={`/blog/${post.id}/`}>
+									<span class="post-title">{post.data.title}</span>
+									<span class="post-date">
+										<FormattedDate date={post.data.pubDate} />
+									</span>
+								</a>
+							</li>
+						))
+					}
+				</ul>
+			</section>
+
+			<section>
+				<h2>在线小工具 <a href="/tools/">全部工具 &rarr;</a></h2>
+				<div class="tool-grid">
+					{
+						tools.map((tool) => (
+							<a href={tool.href}>
+								<div class="tool-title">{tool.title}</div>
+								<div class="tool-desc">{tool.description}</div>
+							</a>
+						))
+					}
+				</div>
+			</section>
+		</main>
+		<Footer />
+	</body>
+</html>
