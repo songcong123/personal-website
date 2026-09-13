@@ -107,7 +107,7 @@ grep -o "https://.*" ~/bin/cloudflared/quicktunnel.log | tail -1
 schtasks /create /tn ttydRW /tr "C:\path\to\ttyd-run.bat" /sc onstart /ru SYSTEM /rl HIGHEST /f
 ```
 
-ttyd 读写、ttyd 只读、cloudflared 三个任务同理。配套一个看门狗（每 5 分钟检查 Tailscale 在线状态，卡死自动重启服务），细节见上一篇文章的评论区讨论（如果有的话）。
+ttyd 读写、ttyd 只读、cloudflared 三个任务同理。配套一个看门狗（每 5 分钟检查 Tailscale 在线状态，卡死自动重启服务），细节见[改造实录](/blog/home-server-devlog/)。
 
 ## 安全要点
 
